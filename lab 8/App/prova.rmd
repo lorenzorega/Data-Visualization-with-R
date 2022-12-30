@@ -1,0 +1,62 @@
+---
+title: "prova"
+author: "Lorenzo Rega"
+date: "28/5/2021"
+output: html_document
+---
+
+```{r }
+fileiss="C:/Users/Lorenzo/Desktop/POLI/VIQ/laboratorio3/lab-8/covid_19-iss.xlsx"
+
+media_mobile <- function(v,n){
+  stopifnot(length(v)>=n)
+  res = rep(NA,floor((n-1)/2))
+  while(length(v) >= n){
+    res = c(res,mean(v[1:n]))
+    v=tail(v,-1)
+  }
+  res = c(res,rep(NA,floor(n/2)))
+  return( res )
+}
+
+
+co<- read_xlsx(fileiss,"casi_inizio_sintomi") %>% 
+  mutate(CASI = as.numeric(CASI)) %>% 
+  rename(SINTOMI = CASI) %>% 
+  inner_join(
+    read_xlsx(fileiss,"casi_prelievo_diagnosi")%>% 
+      mutate(CASI = as.numeric(CASI)) %>% 
+      rename(DIAGNOSI = CASI),
+    by =c("DATA_INIZIO_SINTOMI"="DATA_PRELIEVO_DIAGNOSI")
+  ) %>%
+  rename(Data = DATA_INIZIO_SINTOMI) %>% 
+  select(- starts_with("iss_date")) %>% 
+  mutate(Data = as.Date(Data,format="%d/%m/%Y")) %>% 
+  filter(! is.na(Data)) %>% 
+  pivot_longer(c("SINTOMI","DIAGNOSI"),names_to="Tipo",values_to="CASI") %>% 
+  group_by(Tipo) %>% arrange(Data) %>% 
+  mutate(CASI_MM=media_mobile(CASI,7)) %>% 
+  filter(!is.na(CASI_MM))
+
+co
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

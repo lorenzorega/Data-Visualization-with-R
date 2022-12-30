@@ -1,0 +1,487 @@
+---
+title: "VIQ - Laboratorio 5"
+date: 2021-04-30
+output: html_notebook
+---
+
+### Obiettivi
+
+1.  Usare ggplot per creare grafici
+
+### Strumento
+
+R ed RStudio, in particolare la libreria ggplot (parte di tidyverse): 
+
+```{r import delle librerie,include=FALSE}
+library(tidyverse)
+library(magrittr)
+```
+
+### Dataset
+
+Utilizziamo il dataset pubblico sui dati ISTAT con periodo di riferimento GENNAIO-FEBBRAIO 2021, pubblicati in data 06 APRILE 2021:
+
+https://www.istat.it/it/archivio/256254
+
+Usiamo il dataframe ripulito secondo le indicazioni dello scorso laboratorio.
+Il file `TidyIstat.R` contiene il codice per scaricare e ripulire i dati, che vengono salvati in `istat_occupazione.RDS` (formato compresso di R) che può essere letto tramite il metodo `read_rds()`.
+
+```{r leggi dati, }
+istat <- read_rds("istat_occupazione.RDS")
+#rds formato piu compresso 
+istat
+```
+
+- Mostrare l'andamento del tasso di disosccupazione di Femmine, Maschi, e Generale. 
+  - Usare prima dei punti colorati in modo diverso:
+
+```{r}
+## DA COMPLETARE
+istat%>%
+  ggplot(aes(x=data, y=disoccupazione, group=Sesso, color=Sesso))+
+  geom_point()+
+   scale_color_manual(values=c("red","blue", "black"))+
+  ggtitle("disoccupazione")+
+  ylab("")+
+  scale_y_continuous(labels = scales::percent_format())+
+  theme_minimal()
+
+#evidente che con un andamento questo tipo di visualizzazione non è l'ideale, anche rendendo i punti piu piccoli
+#soprattutto dove ci sono oscillazioni, difficile capire che direzione prendono, quale punto viene prima, quale viene dopo
+
+```
+
+  - e poi usare delle linee:
+
+```{r}
+## DA COMPLETARE
+istat%>%
+  ggplot(aes(x=data, y=disoccupazione, group=Sesso, color=Sesso))+
+  geom_line()+
+   scale_color_manual(values=c("red","blue", "black"))+
+  ggtitle("disoccupazione")+
+  ylab("")+
+  scale_y_continuous(labels = scales::percent_format())+
+  theme_minimal()
+
+ # facet_wrap(~Sesso)
+#problema dato da grosso picco discendente del lockdown 2020
+```
+
+  - Riflessione: quale dei due tipi di layer è più adatto?
+  Più adatto l'uso della linea poiche abbiamo veramente tanti dati e quindi troppi punti da andare a disegnare, i quali non rendono neanche troppo facile capire l'andamento del tasso di disoccupazione che è il vero focus di questo grafico
+
+## Scale 
+
+La visualizzazione può essere personalizzata prima di tutto tramite delle opportune scale che fanno corrispondere i valori delle variabili a delle diverse caratteristiche visuali.
+
+### Scala colore
+
+- Modificare il diagramma a linee precedente in modo che i colori utilizzati per Donne, Uomini e Generale siano rispettivamente rosa, blu e grigio (`pink`,`skyblue`, `gray50`).
+
+```{r}
+## DA COMPLETARE
+linee<-istat%>%
+  ggplot(aes(x=data, y=disoccupazione, group=Sesso, color=Sesso))+
+  geom_line()+
+  #gray100 ha luminosita al massimo
+  #gray10 luminosita al 10% e infatti è molto piu scuro
+   scale_color_manual(values=c("pink","skyblue", "gray50"))+
+  ggtitle("disoccupazione")+
+  ylab("")+
+  scale_y_continuous(labels = scales::label_percent())+
+  theme_minimal()+
+  theme(legend.position = "bottom")
+#theme aggiunta dal prof 
+
+linee
+#posso salvare il plot in una variabile (linee qui)
+
+```
+
+### Altre scale
+
+È possibile utilizzare delle scale per qualsiasi aspetto estetico, ad esempio per `geom_line()` è possibile specificare l'estetica `linetype` per il tipo di linea:
+
+```{r tipi di linea, fig.width=3, fig.height=3, echo=FALSE}
+ggplot(data.frame(y=factor(1:6),x=0),aes(x,y))+
+  geom_text(aes(label=y),vjust=0,size=6)+
+  geom_hline(yintercept=1:6,linetype=1:6)+
+  theme_void()
+```
+
+- Modificare il grafico del punto precedente in modo che i valori per Maschi e Femmine siano a tratto continuo, mentre quelli Generali siano a punto e linea.
+
+  - Suggerimento: si utilizzi la funzione `scale_linetype_manual()`.
+
+```{r }
+## DA COMPLETARE
+#per sapere in che ordine si applicano, faccio
+levels(istat$Sesso)
+#cosi capisco che vengono prima femmine, poi maschi, poi generale
+
+#oltre i 6 livelli sono difficili da percepire
+#a 4 ci arriviamo tutti, 5 e 6 gia piu difficili, oltre non riusciremo a distinguere
+istat%>%
+  ggplot(aes(x=data, y=disoccupazione, group=Sesso, color=Sesso, linetype=Sesso))+
+
+   scale_color_manual(values=c("pink","skyblue", "gray50"))+
+   geom_line()+ #aes(linetype=Sesso) potevi metterlo pure qui dentro
+  #puoi indicare il tipo di linea anche come numeri
+   scale_linetype_manual(values=c(1,1,6))+
+ # scale_linetype_manual(values=c("solid", "solid", "dotdash"))+
+  ggtitle("disoccupazione")+
+  ylab("")+
+  scale_y_continuous(labels = scales::percent_format())+
+  #oppure usa label_percent() 
+  theme_minimal()
+
+#appunti su aes
+#aes sembra un comando che serve a dire: modello un "aspetto estetico" in base alla variabile che ti dico
+#modello la x sui dati
+#la y sulla disoccupazione
+#il colore in base al sesso, dicendogli questo avrò 3 colori diversi perche ci sono 3 sessi diversi. Poi dopo con la scala, gli dico quali colori adottare
+#linetype=sesso significa che il tipo di linea è espresso in funzione del sesso, se non specifico la scala da usare userà in modo automatico 3 tipi diversi
+
+
+```
+
+### Scala posizione
+
+La scala verticale rappresenta dei tassi (<1) che potrebbero essere rappresentati meglio come percentuali. È possibile utilizzare la funzione `scale_y_continuous()` per specificare come
+stampare le etichette. In particolare è possibile utilizzare il parametro `labels` a cui passare una funzione che
+- prende i valori corrispondenti alle etichette 
+- resituisce l'etichetta (ad es. 0.12 dovrebbe diventare "12%")
+
+
+- Modificare il grafico precedente in modo da stampare correttamente le percentuali sull'asse y.
+
+  - Suggerimento: è possibile scrivere esplicitamente la funzione oppure usare `scales::percent` che è una funzione già definita.
+
+```{r}
+## DA COMPLETARE
+istat%>%
+  ggplot(aes(x=data, y=disoccupazione, group=Sesso, color=Sesso, linetype=Sesso))+
+
+   scale_color_manual(values=c("pink","skyblue", "gray50"))+
+   geom_line()+ #aes(linetype=Sesso) potevi metterlo pure qui dentro
+  scale_linetype_manual(values=c("solid", "solid", "dotdash"))+
+  ggtitle("disoccupazione")+
+  ylab("")+
+  #con breaks riesco a dire le cifre che voglio vedere io sull'asse delle y
+  scale_y_continuous(breaks=c(0.04,0.06,0.08,0.10,0.12,0.14),
+                     labels = scales::label_percent())+
+  #scale_y_continuous è la scala di default per l'estetica y. labels è un parametro 
+  theme_minimal()+
+  theme(legend.position = "bottom")
+
+#posso usare funzione percentuale scritta da me, meglio label_percent() piuttosto che percent_format()
+```
+
+## Direct labeling
+
+- Rimuovere la legenda e sostituirla con un direct labeling.
+  - Suggerimento: per rimuovere la legenda legata ad una scale, usare `guide="none"` nella funzione di scala
+  - Suggerimento: per allineare il testo alla destra dell'estremo destro delle linee, è possibile usare il parametro `hjust=0`, ed il parametro `nudge_x` per distanziarlo ulteriormente.
+
+
+```{r}
+## DA COMPLETARE
+#guide="none" va messo sia nella scala del colore che della linea, altrimenti se lo fai solo in uno, noti che rimane una legenda parziale, che prende info da dove guide="none" non c'è ancora. Notato anche che non è possibile metterlo a livello globale
+rightmost<-istat%>%
+ group_by(Sesso)%>%
+  summarize(disoccupazione=last(disoccupazione), data=last(data))
+rightmost
+
+#rightmost potevi anche farlo con istat%>% filter(data=max(data))
+#cosi come hai fatto dopo, cosi hai i dati di prima
+#ha bisogno che rightmost abbia anche la data che in effetti è la x, altrimenti non sa dove posizionarlo
+
+istat%>%
+  ggplot(aes(x=data, y=disoccupazione, group=Sesso, color=Sesso, linetype=Sesso))+
+
+   scale_color_manual(values=c("pink","skyblue", "gray50"), guide="none")+
+   geom_line()+ #aes(linetype=Sesso) potevi metterlo pure qui dentro
+  #aggiungo layer testuale
+  geom_text( aes(label=Sesso) ,data=rightmost, show.legend=FALSE, hjust=0, nudge_x = 100, nudge_y = 0.001)+
+  #se voglio metterlo sul punto metto hjust="center"
+  #se vogliamo il punto sotto : vjust="bottom"
+  
+  #nudge non è in pixel e y, ma sono unita dell'asse x e y.
+  #nudge_y sono percentuali allora qui
+  #Qui 100 sono 100 giorni allora
+   #estetica label qui mi è stata richiesta, senno non funzionava
+    #se non lo faccio su nuovi dati, lui mette la lettere per ogni valore sul grafico (M,F,MF), mettendogli dati rightmost la mette solo alla fine
+  geom_point(data=function(d) d%>%filter(data==max(data)))+
+  #questo per compattare
+  scale_linetype_manual(values=c("solid", "solid", "dotdash"), guide="none")+
+  ggtitle("disoccupazione")+
+  ylab("")+
+  scale_y_continuous(labels = scales::percent_format())+
+  theme_minimal()+
+  theme(plot.title =element_text(hjust=0.5))
+```
+
+
+## Serie multiple
+
+- Mostrare l'andamento del tasso di disoccupazione generale e quello giovanile
+
+  - Suggerimento: per lasciare spazio sufficiente all'etichetta è possibile usare il parametro `expand` della funzione di scale che riceve il risultato della funzione `expansion()` (si veda Help per ulteriori indicazioni).
+
+```{r}
+## DA COMPLETARE
+
+
+istat_allungato<-istat%>%
+  filter(Sesso=="MF")%>%
+  pivot_longer(cols=c("disoccupazione", "disoccupazione.giovani"), names_to ="dis", values_to = "valore")%>%
+  mutate(dis=as_factor(dis))%>%
+  mutate(dis=fct_recode(dis, generale="disoccupazione", giovanile="disoccupazione.giovani"))
+#i nomi sono troppo lunghi, cosi li vado a cambiare
+istat_allungato
+
+rightmost<-istat_allungato%>%
+ group_by(dis)%>%
+  summarize(valore=last(valore), data=last(data))
+rightmost
+ levels(istat_allungato$dis)
+  ggplot(istat_allungato, aes(x=data, y=valore, group=dis, color=dis))+
+#pensa a un colore migliore
+   scale_color_manual(values=c("black","seagreen"), guide="none")+
+   geom_line()+ #aes(linetype=Sesso) potevi metterlo pure qui dentro
+ geom_text( aes( label=dis) ,data=rightmost, show.legend=FALSE, hjust=0, nudge_x = 100)+
+   
+
+  ggtitle("disoccupazione generale vs giovani")+
+  ylab("")+
+  scale_y_continuous(labels = scales::percent_format())+
+ # scale_y_continuous è la scala di default per l'estetica y. labels è un parametro 
+scale_x_date(expand=expansion(mult = c(0.05,0.15)))+
+    #0.05 per lato sx, 0.15 per lato dx. HO allungato del 15% a destra l'asse delle x e del 5% a sx 
+  theme_minimal()
+ 
+  #in ottica esame, richiesto un lavoro ben curato. Etichette si devono leggere, non devono essere tagliate
+
+
+```
+
+
+## Annotazioni
+
+- Modificare il grafico precedente in modo da mostrare il valore massimo, il valore minimo ed il valore finale (assieme alla *direct label*) di ciascuna serie.
+
+```{r}
+## DA COMPLETARE
+ percentuale<- function(num){
+     r<- paste0(round((num*100),1), "%")
+ }
+
+
+
+riassunto<-istat_allungato%>%
+  group_by(dis)%>%
+  summarise(massimo=max(valore), minimo=min(valore), disoccupazione=last(valore), data=last(data))
+
+riassunto
+#poi non l'ho piu usato questo riassunto
+
+max_d<-istat_allungato%>%
+  group_by(dis)%>%
+  filter(valore==max(valore))
+
+max_d
+
+min_d<-istat_allungato%>%
+  group_by(dis)%>%
+  filter(valore==min(valore))
+
+min_d
+
+
+#DUBBIO. C'è UN MODO PER AGGIUNGERNE UNO SOLO?
+istat_allungato
+ ggplot(istat_allungato, aes(x=data, y=valore, group=dis, color=dis))+
+#pensa a un colore migliore
+   scale_color_manual(values=c("black","blue"), guide="none")+
+   geom_line()+ #aes(linetype=Sesso) potevi metterlo pure qui dentro
+       geom_text(aes(label=dis), data=rightmost, show.legend = FALSE,hjust=0, nudge_x = 40 )+
+#geom_text dava problemi, diceva infatti che non vedeva valore
+   #in effetti lui prima non aveva aes y e quindi modellava y su valore (scritto a livello globale all'inizio). Valore in riassunto non esiste
+   #gli dico che y lo modella su disoccupazione (ovvero l'ultimo valore della serie) cosi lo mette in corrispondenza della y dell'ultimo valore
+   
+   #l'ho poi tolta perche ho cambiato dati che usavo, ho deciso di semplicemente filtrare la tabella con le righe col massimo e col minimo
+   #essendo le righe uguali, x e y li eredita da sopra
+ geom_text( aes( label=percentuale(valore)) ,data=rightmost, show.legend=FALSE, hjust=0, nudge_x = 40, nudge_y = -0.02)+
+       geom_text(aes( label=paste0(percentuale(valore),"\n(",mese," ",anno,")")),
+         #qui ho concatenato tante stringhe con paste0
+                 data=max_d, show.legend = FALSE,hjust=0.5, nudge_y = 0.01, size=2)+
+    geom_text(aes( label=paste0(percentuale(valore),"\n(",mese," ",anno,")")), data=min_d, show.legend = FALSE,hjust=0.5, nudge_y = -0.01,size=2)+
+
+
+
+  ggtitle("disoccupazione generale vs giovani")+
+  ylab("")+
+  scale_y_continuous(labels = scales::percent_format(), expand=expansion(mult=c(0.05,0.05)))+
+ # scale_y_continuous è la scala di default per l'estetica y. labels è un parametro 
+scale_x_date(expand=expansion(mult = c(0.05,0.15)))+
+  theme_minimal()
+   
+  
+ 
+```
+
+## Aprossimazioni
+
+* Scrivere una funzione che dato un vettore `v` di numeri ed un intero `n`, produca un vettore (di pari lunghezza) contenente la media mobile su `n` elementi. 
+Visto che la media mobile non è definita per i primi $n/2$ elementi, il risultato deve contenere $\lfloor{(n-1)/2}\rfloor$ valori `NA` in testa e $\lfloor{n/2}\rfloor$ `NA` in coda.
+
+------------------ ---- --- ------- ------- --- --- ------- ------- ------- ----
+ **v**              2    5     2       6     6   6     3       4       1     6  
+
+ **media mobile**   NA   3   4.333   4.667   6   5   4.333   2.667   3.667   NA 
+------------------ ---- --- ------- ------- --- --- ------- ------- ------- ----
+
+```{r}
+## DA COMPLETARE
+media_mobile<-function(v,n){
+  stopifnot(length(v)>=n)
+  #se mi dai vettore di 2 e vuoi media mobile di 3, non va bene 
+  res=rep(NA,floor((n-1)/2))
+  #metto una serie di NA
+  while(length(v)>=n){
+    res=c(res, mean(v[1:n]))
+    v=tail(v,-1) 
+    #v=v[2: length(v)]
+    #lo accorcio di uno togliendo il primo elemento
+  }
+  res=c(res, rep(NA,floor(n/2)))
+  return(res)
+}
+```
+
+- Rappresentare l'andamento della disoccupazione giovanile con aggiunta la media mobile a tre mesi.
+I giovani sono pochi. Una piccola variazione nel campione implica una grossa variazione in cio che vediamo. 
+Istat ricordiamo lavora sui campioni.Usiamo allora una media mobile
+
+```{r}
+## DA COMPLETARE
+
+
+istat%>%filter(Sesso=="MF")%>%
+  ggplot(aes(x=data, y=disoccupazione.giovani))+
+  geom_point(color="gray",size=1)+
+  geom_line(aes(y=media_mobile(disoccupazione.giovani,3)),color="tomato",size=1)+
+  scale_y_continuous(labels=scales::label_percent())
+   
+```
+
+- Rappresentare l'andamento della disoccupazione giovanile con aggiunta l'interpolazione LOESS, tramite la funzione `geom_smooth()`.
+
+```{r}
+## DA COMPLETARE
+istat%>%
+  filter(Sesso=="MF")%>%
+  ggplot(aes(x=data, y=disoccupazione.giovani))+
+  geom_point()+
+  geom_smooth(method="loess")
+
+#media mobile è piu precisa come approssimazione
+```
+
+
+## Valori derivati
+
+Dalla [nota metodologica ISTAT](https://www.istat.it/it/files//2021/04/CS_Occupati_disoccupati_FEBBRAIO_2021.pdf) sappiamo che
+
+- Occupati: persone (15-89 anni) che hanno lavorato o sono in permesso
+- Disoccupati: persone (15-74 anni) che sono in cerca di lavoro
+- Popolazione: persone nella fascia d'età considerata
+- Attivi: Occupati + Disoccupati
+
+Il tasso di attività è dato da:
+
+$$t_A = \frac{Attivi}{Popolazione}$$
+
+Il tasso di occupazione è dato da:
+
+$$t_O = \frac{Occupati}{Popolazione}$$
+
+Il tasso di disoccupazione è dato da:
+
+$$t_D = \frac{Disoccupati}{Attivi}$$
+
+A partire dai valori precedenti definiti e forniti dall'ISTAT quindi possiamo calcolare:
+
+La proporzione di disoccupati sulla popolazione totale:
+
+$$p_D = \frac{Disoccupati}{Popolazione} = t_D \cdot t_A$$
+
+La proporzione di inattivi (non attivi) sulla popolazione totale.
+
+$$p_I = \frac{Inattivi}{Popolazione} = 1 - t_A$$
+
+Le popolazionie di riferimento per Occupati e Disoccupati non sono esattamente le stesse, ma la differenza è minima, perciò abbiamo:
+
+$$ p_D + t_O + p_I \approx 1 $$
+
+- Verificare che la distribuzione della somma tra Tasso di Occupazione, Proporzione di Disoccupati e Proporzione Inattivi sia circa 1 (usando un boxplot) per M, F e MF.
+
+```{r}
+## DA COMPLETARE
+r<-istat$disoccupazione*istat$attivita
+k<-(1-istat$attivita)
+
+istat%>%
+  mutate(prop_disoccupati=r, prop_inattivi=k)%>%
+  mutate(somma=prop_disoccupati+prop_inattivi+occupazione)%>%
+  ggplot(aes(y=somma, x=Sesso, fill=Sesso))+
+  scale_fill_manual(values = c( "pink","steelblue","grey70"), guide="none")+
+  geom_boxplot()+
+  theme_minimal()
+  
+  
+
+```
+
+
+**Riflessione** lo scostamento è dovuto alla non esatta corrispondenza tra le popolazioni, in particolare è tanto più ampio quando più c'è una parte di occupati nella popolazione tra 74 e 89 anni.
+
+- Modificare il diagramma precedente usando un violin plot sopra il quale riportare i punti relativi ai singoli valori.
+  - usare il parametro `position="jitter"` per sparpagliare in maniera casuale i punti, evitando così di averli tutti allineati e sovrapposti.
+
+```{r}
+## DA COMPLETARE
+
+istat%<>%
+  mutate(prop_disoccupati=r, prop_inattivi=k)%>%
+  mutate(somma=prop_disoccupati+prop_inattivi+occupazione)
+
+istat%>%
+  ggplot(aes(x=somma, y=Sesso, color=Sesso))+
+  scale_color_manual(values = c( "hotpink","steelblue","black"))+
+  geom_violin()+
+  #senza il jitter sono tutti sulla stessa linea e non sapresti distinguere dove ce ne sono di piu e dove di meno
+  geom_point(position = "jitter")+
+  theme_minimal()
+
+#boxplot piu semplice, ma ci nasconde molti dettagli che qui invece vediamo
+```
+
+
+- Mostrare con un diagramma ad area l'andamento delle tre componenti della somma nel corso del periodo di osservazione per la popolazione generale (MF).
+
+```{r}
+## DA COMPLETARE
+istat%>%
+  filter(Sesso=="MF")%>%
+  pivot_longer(cols=c("prop_disoccupati","prop_inattivi", "occupazione"), names_to = "componenti_somma")%>%
+  select(-somma)%>%
+  mutate(componenti_somma=as_factor(componenti_somma))%>%
+  ggplot(aes(x=data, y=value, fill=componenti_somma))+
+  geom_area()
+
+#persone in lockdown non cercavano lavoro, da disoccupati diventavano inattivi
+  
+
+```

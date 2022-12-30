@@ -1,0 +1,55 @@
+---
+title: "Esempio Shiny"
+author: "Lorenzo Rega"
+date: "27/5/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r }
+
+library(shiny)
+library(dplyr)
+
+#lettura dati
+
+marcatori<-read.csv("./data/Marcatori2021.csv")
+```
+
+
+
+```{r ui}
+fluidPage(
+numericInput("numeroGolMax","Inserire max gol", value =0),
+actionButton("doTabella", "Calcola"),
+tableOutput("tabellaFrequenze"))
+
+```
+
+
+```{r server}
+
+ t<-tibble(marcatori$Gol)
+    
+    t<-t%>%
+        rename("Gol"= "marcatori$Gol")%>%
+        mutate(Gol=as.integer(Gol))%>%
+        group_by(Gol)%>%
+        summarise("Frequenza"=length(Gol))
+    
+      r.max.goals<- eventReactive(input$doTabella,{ input$numeroGolMax })
+      
+      output$tabellaFrequenze<-renderTable( { req(r.max.goals()) #quest'istruzione si è rilevata fondamentale
+          #aspetta che ci sia un valore in quel campo, altriemnti non
+      #fa il renderTable
+         #si assicura che questo valore ci sia prima di procedere 
+                                           t%>%
+                                               filter(Gol<=r.max.goals())
+})
+
+
+
+```
+
+
+
